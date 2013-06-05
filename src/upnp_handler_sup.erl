@@ -25,10 +25,11 @@ start_link(Specs) ->
 init(Specs) ->
     UPNP_NET = {upnp_net, {upnp_net, start_link, [Specs]},
                 permanent, 2000, worker, [upnp_net]},
-    HTTPd_Dispatch = [ {'_', [{'_', upnp_handler, []}]} ],
+    HTTPd_Dispatch = cowboy_router:compile([{'_', [{'_', upnp_handler, []}]}]),
+    HTTPd_Env = [{dispatch, HTTPd_Dispatch}],
     HTTPd = ranch:child_spec(upnp_cowboy,
                               10, ranch_tcp, [{port, 0}],
-                              cowboy_protocol, [{dispatch, HTTPd_Dispatch}]),
+                              cowboy_protocol, [{env, HTTPd_Env}]),
     Children = [UPNP_NET, HTTPd],
     RestartStrategy = {one_for_one, 1, 60},
     {ok, {RestartStrategy, Children}}.
